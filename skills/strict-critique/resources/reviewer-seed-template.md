@@ -49,9 +49,10 @@ If you find ANY critical or major issue, verdict MUST be REQUEST_CHANGES.
 10. Run scoped lint/static-analysis commands.
 11. Audit type escapes in changed files: `any`, broad `unknown`, unchecked casts, non-null assertions, and lint disables require explicit invariants.
 12. Verify major functions have useful TSDoc-style comments when exported, public, lifecycle-sensitive, security-sensitive, adapter-like, classifier-like, or non-obvious.
-13. Check git history or staging plan for granular, parseable commit boundaries.
-14. Run strict redundancy checklist (catch→null→fallback, unified-path duplicates, cleanup, sibling parity, lifecycle alignment).
-15. Verify diary claims with grep/type tracing.
+13. Grep changed implementation/domain artifacts for workstream ID variants, titles, and slugs. Fixture paths, fixture payload values, test names/functions, implementation comments/doc comments, generated artifact names/comments, human-facing implementation docs, and suggested commit messages must use domain/product language. Keep hits only when artifact conventions require orchestration/bookkeeping paths.
+14. Check git history or staging plan for granular, parseable commit boundaries and workstream-free commit-message suggestions.
+15. Run strict redundancy checklist (catch→null→fallback, unified-path duplicates, cleanup, sibling parity, lifecycle alignment).
+16. Verify diary claims with grep/type tracing.
 
 ## Output path
 

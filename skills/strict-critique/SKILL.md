@@ -20,6 +20,7 @@ When reviewing scoped workstreams, consume `/workstream-scoping` outputs if pres
 - HITL decisions over silent assumptions.
 - Type/lint correctness is correctness, not style.
 - Documentation quality is part of collaboration correctness when behavior is major or non-obvious.
+- Naming quality is part of implementation correctness: fixture paths, fixture payload values, test names/functions, comments/doc comments, generated artifact names/comments, implementation docs, and commit-message suggestions must use domain/product language rather than workstream IDs or titles. Required orchestration/bookkeeping artifact paths are the exception.
 - Git history must be parseable by humans and agents.
 - Evidence over claims.
 - Verify diary claims independently.
@@ -95,16 +96,17 @@ Reviewers must run these checks explicitly:
 10. Run scoped lint/static-analysis commands.
 11. Audit type escapes in changed files: `any`, broad `unknown`, unchecked casts, non-null assertions, and lint disables require explicit invariants.
 12. Verify major functions have useful TSDoc-style comments when exported, public, lifecycle-sensitive, security-sensitive, adapter-like, classifier-like, or non-obvious. Use `/Users/vinicius/code/devtools/devtools-frontend` as the documentation bar.
-13. Check git history or staging plan: changes should be separable into small coherent commits, with mechanical formatting isolated from behavior when possible.
-14. Trace catch→null→fallback chains.
-15. Confirm unified paths removed old call sites (grep old function names).
-16. Verify in-memory cleanup on teardown/error/scope close.
-17. Carry forward endpoint protections (rate limits/auth/guards).
-18. Cross-check server/client shared constants.
-19. Validate lifecycle choice (`forkDaemon` vs `forkIn`).
-20. Detect polling endpoint side effects.
-21. Verify deprecated API surfaces are fully removed or fully adapted.
-22. Check sibling code parity across adjacent lanes.
+13. Grep changed implementation/domain artifacts for workstream ID variants, titles, and slugs. Treat hits in fixture paths, fixture payloads, test names/functions, implementation comments/doc comments, generated artifact names/comments, human-facing implementation docs, or suggested commit messages as findings unless they are required orchestration/bookkeeping paths.
+14. Check git history or staging plan: changes should be separable into small coherent commits, with mechanical formatting isolated from behavior when possible, and commit-message suggestions must avoid workstream IDs/titles.
+15. Trace catch→null→fallback chains.
+16. Confirm unified paths removed old call sites (grep old function names).
+17. Verify in-memory cleanup on teardown/error/scope close.
+18. Carry forward endpoint protections (rate limits/auth/guards).
+19. Cross-check server/client shared constants.
+20. Validate lifecycle choice (`forkDaemon` vs `forkIn`).
+21. Detect polling endpoint side effects.
+22. Verify deprecated API surfaces are fully removed or fully adapted.
+23. Check sibling code parity across adjacent lanes.
 
 ## Severity and Merge Gates
 
@@ -119,6 +121,7 @@ Correctness severity additions:
 - Major: implementation breached dispatch scope without a logged decision; dependency/HITL blocker was bypassed; missing evidence for a claimed posture; human-judgment area was not escalated; autonomous decision under uncertainty was not logged; proxy verification is weak or misleading.
 - Major: type/lint correctness is weakened by unjustified `any`, broad `unknown`, unchecked casts, non-null assertions, lint disables, or missing schema validation at an external boundary.
 - Major: a public/exported/major function lacks necessary TSDoc-style documentation and the missing context can mislead future humans or agents.
+- Major: workstream IDs/titles leak into implementation/domain artifact names, fixtures, tests, generated artifacts, comments, docs, or commit-message suggestions where domain/product language should be used.
 - Minor: commit boundaries are muddy but still stageable into coherent commits.
 - Major: commit history or staged patch mixes unrelated behavior in a way that blocks reliable human/agent review.
 
@@ -170,5 +173,6 @@ Do not mark the review complete until:
 7. Artifact conventions and required output paths were checked.
 8. Required `tsc` and lint/static checks were executed and reported.
 9. Type/lint/documentation gates were checked.
-10. Git history or staging plan was checked for parseable commit boundaries.
-11. Final verdict is `APPROVE`.
+10. Implementation naming was grepped for workstream ID/title leakage and only required orchestration/bookkeeping path hits remain.
+11. Git history or staging plan was checked for parseable commit boundaries.
+12. Final verdict is `APPROVE`.
