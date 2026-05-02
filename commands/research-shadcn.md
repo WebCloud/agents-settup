@@ -1,0 +1,1 @@
+/Users/vinicius/.claude/commands/research-shadcn.md

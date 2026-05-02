@@ -1,0 +1,87 @@
+{
+  "version": 3,
+  "skills": {
+    "react-email": {
+      "source": "resend/react-email",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/resend/react-email.git",
+      "skillPath": "skills/SKILL.md",
+      "skillFolderHash": "ab0c7f2253da2228091460cf369cf58a2b130954",
+      "installedAt": "2026-01-25T14:12:44.549Z",
+      "updatedAt": "2026-01-25T14:12:44.549Z"
+    },
+    "send-email": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/resend/resend-skills.git",
+      "skillPath": "send-email/SKILL.md",
+      "skillFolderHash": "8ddecc1346f541981771d13ad4b5a1bed3f93d8c",
+      "installedAt": "2026-01-25T14:13:23.183Z",
+      "updatedAt": "2026-01-25T14:13:23.183Z"
+    },
+    "email-best-practices": {
+      "source": "resend/email-best-practices",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/resend/email-best-practices.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "",
+      "installedAt": "2026-01-25T14:15:27.736Z",
+      "updatedAt": "2026-01-25T14:15:27.736Z"
+    },
+    "resend": {
+      "source": "resend/resend-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/resend/resend-skills.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "32fc2ec4338b5fb9510321259e45907f17b6c396",
+      "installedAt": "2026-02-10T15:24:04.298Z",
+      "updatedAt": "2026-02-10T15:24:04.298Z"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/skills.git",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "skillFolderHash": "c2f31172b6f256272305a5e6e7228b258446899f",
+      "installedAt": "2026-02-10T15:24:13.147Z",
+      "updatedAt": "2026-02-10T15:24:13.147Z"
+    },
+    "postgres": {
+      "source": "planetscale/database-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/planetscale/database-skills.git",
+      "skillPath": "skills/postgres/SKILL.md",
+      "skillFolderHash": "656a391b0bf645c7ef626180f978053dad77fbc0",
+      "installedAt": "2026-02-26T21:41:34.135Z",
+      "updatedAt": "2026-02-26T21:41:34.135Z"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/shadcn/ui.git",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "skillFolderHash": "a8404703769866faf15bee897c9ae6e252ac2d35",
+      "installedAt": "2026-04-30T23:13:40.850Z",
+      "updatedAt": "2026-04-30T23:13:40.850Z"
+    }
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "antigravity",
+    "cline",
+    "codex",
+    "cursor",
+    "deepagents",
+    "dexto",
+    "firebender",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-cli",
+    "opencode",
+    "warp",
+    "claude-code"
+  ],
+  "dismissed": {
+    "findSkillsPrompt": true
+  }
+}
