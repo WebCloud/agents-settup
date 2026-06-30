@@ -11,6 +11,75 @@ The goal is to make correctness and verification explicit before agents start ex
 
 This is the highest-HITL phase of the workflow. Use it to interview the user or task owner when correctness, acceptance criteria, verification method, or definition of done is unclear. Do not push ambiguity downstream to implementation agents.
 
+## Non-Negotiable Standard
+
+Scoping is not a planning essay. It is a dispatch contract.
+
+Do not mark a workstream ready for independent implementation unless the scope
+is specific enough that an implementation agent can start without guessing:
+
+- what behavior must change
+- what behavior must not change
+- which source of truth wins
+- which files, packages, commands, and artifacts are in or out of scope
+- which checks prove each slice
+- which decisions are blocked, defaulted, logged, or waived
+- where evidence, diary, decisions, reviews, and handover artifacts go
+
+If the scope still contains vague phrases such as "improve", "make robust",
+"clean up", "handle edge cases", "as appropriate", "investigate", or "TBD"
+without concrete acceptance criteria and verification, mark the scope `Draft` or
+`Blocked`. Do not silently translate vague language into implementation choices.
+
+## Interview-First Protocol
+
+Before producing the final scope, actively interview the user or task owner when
+any correctness, product, architecture, data, or review criteria are unclear.
+Prefer a short set of high-leverage questions over a long questionnaire.
+
+Every interview must produce durable notes:
+
+- answered decisions with exact user intent
+- open questions
+- proposed defaults
+- assumptions agents may use if logged
+- blockers that prevent dispatch
+- areas requiring human judgment during review
+
+Use concrete questions:
+
+- "What observable behavior proves this is correct?"
+- "What existing behavior must not change?"
+- "What would make this unacceptable?"
+- "Which source wins if docs, tickets, and current code disagree?"
+- "Which examples or fixtures should define correctness?"
+- "Which output should a reviewer see first?"
+- "Which decisions may agents make, and which require you?"
+- "What evidence artifact should exist at the end?"
+
+If the user is unavailable, do not invent source-of-truth decisions. Either:
+
+- mark the workstream `Blocked`, or
+- mark it `Guarded` with proposed defaults, explicit assumptions, and review
+  escalation. Guarded scopes are not ready for silent autonomous merge.
+
+## Definition Of Ready
+
+Dispatch readiness requires all of these to be true:
+
+- no unresolved blocker is hidden inside prose
+- every task slice has a correctness point, verification method, evidence
+  artifact, approval path, and commit intent
+- every required artifact path is exact
+- every verification command is concrete or explicitly deferred with a reason
+- all source-of-truth conflicts are resolved, escalated, or logged as HITL
+- non-goals and forbidden files/systems are explicit
+- implementation agents can identify write ownership and avoid conflicts
+- strict-critique reviewers can validate the work without rereading the chat
+
+If any item fails, the dispatch packet status must be `Draft`, `Blocked`, or
+`Guarded`; it must not say ready.
+
 ## Core Questions
 
 Answer these before dispatching implementers:
@@ -19,9 +88,9 @@ Answer these before dispatching implementers:
 2. **Source of truth:** Where does the desired outcome come from: user request, ticket, PRD, issue, design, existing behavior, tests, or code convention?
 3. **Clarity:** Is the source of truth clear, partial, contradictory, or missing?
 4. **Verifiability:** Which parts are easy to verify, proxy-verifiable, human-judgment-only, or unknown?
-5. **Verification methods:** Which checks prove correctness: TDD/unit tests, integration tests, browser/E2E tests, typecheck, lint, static analysis, security scan, manual QA, screenshots, traces, logs, fixtures, or reviewer inspection?
+5. **Verification methods:** Which checks prove correctness: TDD/unit tests, integration tests, browser/E2E tests, typecheck, lint, static analysis, security scan, manual QA, screenshots, traces, logs, fixtures, or reviewer inspection? For behavior, deterministic tests are the primary proof and must include happy paths plus known, reasonable unhappy paths within scope.
 6. **Definition of done:** What concrete exit criteria must be satisfied before implementation is considered complete?
-7. **Type and lint correctness:** What type-system guarantees, lint rules, schema boundaries, and unsafe-cast restrictions are required?
+7. **Type and lint correctness:** What type-system guarantees, lint rules, schema boundaries, unsafe-cast restrictions, and canonical SDK/framework/generated/crate types are required?
 8. **Documentation correctness:** Which public, exported, major, lifecycle-sensitive, or non-obvious functions need TSDoc-style comments?
 9. **Git history:** How should the work be split into granular, parseable commits for humans and agents?
 10. **Decomposition:** How can broad work be split into smaller task slices with explicit verification points?
@@ -34,6 +103,9 @@ Answer these before dispatching implementers:
 17. **Dispatch readiness:** Can an implementation agent receive this scope without reconstructing missing context from chat?
 18. **Artifact paths:** Where exactly should diary, evidence, decision-log, handover, and review artifacts be written?
 19. **Review lanes:** Which strict-critique lanes and domain skills are required for each workstream or slice?
+20. **Definition of ready:** Can the work be implemented without guessing, or must the scope remain Draft/Blocked/Guarded?
+21. **Literature packet:** Which docs, tickets, commits, prior workstreams, whitepapers, skills, examples, and current behavior must implementers read, and why?
+22. **Anti-sources:** Which legacy docs, stale behavior, old assumptions, or superseded decisions must not override this scope?
 
 ## HITL Criteria Definition
 
@@ -58,6 +130,79 @@ When asking, prefer concrete criteria questions:
 
 If HITL is unavailable, mark the gap explicitly in the scoping artifact and set review posture to `Unknown` or `Guarded`.
 
+## Source-Of-Truth Discipline
+
+Classify every source used by the scope:
+
+- **Primary:** authoritative for the requested outcome.
+- **Supporting:** useful context but not allowed to override primary sources.
+- **Legacy/current behavior:** describes what exists today; may be replaced.
+- **Anti-source:** stale, superseded, misleading, or explicitly out of scope.
+- **Unknown:** referenced but not yet inspected or not accessible.
+
+When sources conflict, record:
+
+- the conflicting claims
+- which source wins
+- who decided
+- what reviewers must re-check
+- whether implementation is blocked until the conflict is resolved
+
+Do not let old docs, code comments, previous workstream titles, branch names, or
+test behavior silently override the current scope. If current behavior is being
+preserved, say so. If current behavior is being replaced, say so.
+
+## Canonical Implementation And Type Research
+
+Before implementation is marked ready, the scope must explicitly check for
+canonical types, SDKs, framework APIs, generated schemas, protocol definitions,
+or existing package/crate exports that already define the boundary being
+changed. Do not let agents invent local protocol, transport, schema, or result
+types until this research has been performed and logged.
+
+For each affected typed boundary, record:
+
+- the canonical source inspected, such as an official SDK, generated schema,
+  crate API, package export, framework type, protocol spec, or existing shared
+  project type
+- the exact type, schema, trait, enum, helper, or API that should be reused
+- why any local wrapper, narrowing helper, cast, adapter, or duplicate type is
+  still necessary
+- which verification proves the local code remains aligned with the canonical
+  source, such as typecheck, schema parse, compile test, fixture compatibility,
+  or SDK contract test
+
+Default posture:
+
+- Rust implementation should lean on crate APIs, enums, traits, typed result
+  builders, and compiler-enforced ownership/lifetimes instead of stringly typed
+  local mirrors.
+- TypeScript implementation should import canonical SDK/generated/shared types
+  at protocol and package boundaries, validate unknown data at the edge, and
+  narrow into local domain types only after the boundary is checked.
+- Local duplicate types are allowed only for intentionally smaller domain
+  models or test doubles, and the scope must name the canonical source they
+  intentionally differ from.
+
+If canonical type research is skipped, unknown, or blocked, mark the dispatch
+packet `Guarded` or `Blocked`. Do not claim the type/lint gate is satisfied by
+hand-maintained lookalike types.
+
+## Literature Packet
+
+For implementation-ready workstreams, include a reading packet. This is the
+minimum literature an implementing or reviewing agent must inspect.
+
+Each entry must include:
+
+- exact path, URL, ticket, commit, or artifact ref
+- why it matters
+- whether it is primary, supporting, legacy/current behavior, anti-source, or unknown
+- what question it answers
+
+Do not provide a bulk list of documents without purpose. A reading packet is a
+map for correctness, not a bibliography.
+
 ## Verifier Matrix
 
 Classify each meaningful task slice:
@@ -79,13 +224,20 @@ Use these as defaults:
 |---|---|---|
 | TDD/unit test | Pure logic, parsers, classifiers, scoring, transforms, policy rules | Failing-then-passing test or named test case |
 | Integration test | Multiple services/modules must cooperate | Test run output, fixture, seeded scenario |
-| Browser/E2E test | User-visible behavior, forms, navigation, auth, rendering, regressions | Playwright/browser trace, screenshot, or video |
+| Browser/E2E test | User-visible behavior, forms, navigation, auth, rendering, regressions on existing or already-scoped routes | Playwright/browser trace, screenshot, or video |
 | Typecheck/lint/static analysis | API contracts, dead code, style gates, type safety | Command output |
 | Security review/scan | Auth, permissions, injection, secrets, data exposure, sandbox boundaries | Finding log, threat note, or scan output |
 | Manual QA | Experience quality, ambiguous UX, judgment-heavy product behavior | Checklist result with screenshots or notes |
 | Reviewer inspection | Architecture, maintainability, convention, risk acceptance | Review note tied to files or design decision |
 
 Do not use generic "tests pass" as the only verification method for a task slice unless the tests directly exercise the correctness target.
+
+For user-visible work, distinguish deterministic behavior proof from Visual Proof:
+
+- Deterministic tests are the primary proof for behavior and should cover the happy path plus known, reasonable unhappy paths within the approved scope.
+- Visual Proof is a screenshot or trace of an existing user-facing route, or a route that is already part of the scoped product work.
+- Do not scope proof-only QA harnesses, hidden routes, synthetic UI surfaces, or special APIs solely to manufacture Visual Proof.
+- If no existing/scoped route exists, record Visual Proof as not applicable and use deterministic tests plus a bounded, validated, fingerprinted test-output artifact as substitute proof.
 
 ## Correctness Gates
 
@@ -148,8 +300,14 @@ A dispatch packet must include:
 - artifact paths for diary, decisions, evidence, and reviews
 - review lanes
 - conflict avoidance instructions
+- mandatory reading/literature packet with source classification
+- exact status: Ready, Draft, Blocked, or Guarded
 
 If any of these are missing, mark the workstream as `Draft` or `Blocked`, not ready for independent agents.
+
+Dispatch packets must not contain placeholders such as `TBD`, `as needed`,
+`appropriate tests`, or `relevant files` unless those phrases are immediately
+followed by a blocker, owner, and decision path.
 
 ## Verifiable Decomposition
 
@@ -160,6 +318,9 @@ Each task slice must include a verification point. A slice is underspecified if 
 - how the slice will be verified
 - what artifact proves verification happened
 - who can approve it: agent, reviewer, or human owner
+- which files/packages/crates are likely owned by the slice
+- which adjacent files must be checked for parity
+- what decisions are forbidden inside the slice
 
 Prefer decomposition like this:
 
@@ -177,6 +338,19 @@ Avoid decomposition like this:
 - Improve posture classifier
 ```
 
+Also avoid:
+
+```markdown
+- Add tests as appropriate
+- Refactor source handling
+- Make output clearer
+- Investigate LSP integration
+- Clean up artifacts
+```
+
+Unless each item is expanded into observable behavior, verification, evidence,
+ownership, and approval, it is not dispatch-ready.
+
 ## Required Scoping Artifact
 
 Produce a short artifact before implementation:
@@ -190,8 +364,16 @@ Produce a short artifact before implementation:
 ## Source Of Truth
 - Primary:
 - Supporting:
+- Legacy/current behavior:
+- Anti-sources:
 - Clarity: clear / partial / contradictory / missing
 - Gaps:
+
+## Literature Packet
+- Path/ref:
+  - Classification:
+  - Why it matters:
+  - Question answered:
 
 ## Verifiability Map
 - Easy to verify:
@@ -212,9 +394,11 @@ Produce a short artifact before implementation:
 - Required checks:
 - Required artifacts:
 - Required approvals:
+- Definition of ready status:
 - Explicit non-goals:
 
 ## Type, Lint, And Documentation Gates
+- Canonical type/source research:
 - Type-system expectations:
 - Schema/edge validation:
 - Lint/static commands:
@@ -225,6 +409,8 @@ Produce a short artifact before implementation:
 ## Decomposition
 - Task slice 1:
   - Correctness point:
+  - Likely write/read scope:
+  - Must not change:
   - Verification method:
   - Evidence artifact:
   - Type/lint/doc gate:
@@ -265,6 +451,7 @@ Produce a short artifact before implementation:
 - Blocking decisions:
 - Proposed defaults:
 - Assumptions agents may use if logged:
+- Waived or deferred decisions:
 - Questions to ask user before dispatch:
 
 ## Scoping Output Artifacts
@@ -306,6 +493,8 @@ At minimum, create or update:
 - an evidence plan naming expected artifact paths or artifact types
 - a dependency graph for multi-workstream or parallel implementation
 - a HITL decision register separating blockers from proposed defaults
+- a literature packet with source classifications
+- a definition-of-ready status
 - dispatch packets for work intended for independent agents
 - review lanes and required domain skills for strict critique
 - exact diary, evidence, decision-log, and review artifact paths
@@ -322,6 +511,7 @@ docs/workstreams/[TASK_ID]/
   dispatch-packet.md
   review-lanes.md
   decisions.md
+  literature.md
 ```
 
 If the repository already has a project-specific diary, handover, or review folder convention, use that instead and link the paths from the scoping artifact.

@@ -34,6 +34,34 @@ The scoping phase defines:
 
 Do not treat a plan as complete until the correctness target, verification path, dependency/HITL state, and artifact paths are explicit. If source-of-truth is missing or contradictory, either ask the user or record the assumption as a decision-log item before implementation.
 
+## Kanban Work Queue Contract
+
+When the target repo has a Neuve Kanban board, the board is the operational queue for the workstream. The lead must not dispatch implementation or review from chat-only instructions.
+
+Before dispatching any implementer or reviewer:
+
+- Run `neuve kanban list` from the target repo to confirm the repo-local board and lane state. If the repo is not initialized for Kanban, record the setup gap in the scoping bundle and either initialize the board or ask the owner whether this task intentionally bypasses Kanban.
+- Select or create exactly one owning ticket for the task slice. The ticket must have source refs, a brief/body, dependency or explicit no-dependency state, unlock criteria, validation route/scope, expected evidence, and current lane.
+- Read `neuve kanban show <ticket>` and `neuve kanban context <ticket>` before composing seed prompts. Include the ticket id, source refs, lane, dependencies, blockers, expected evidence, and validation scope in the seed prompt.
+- If a ticket is blocked, has unfinished parent dependencies, lacks source refs, or lacks expected evidence, do not dispatch implementation. Either move the ticket through the proper dependency/HITL resolution path or ask the owner for a bounded decision.
+
+During implementation and review:
+
+- Implementers must record progress and handoff context with `neuve kanban comment <ticket> ... --source-ref <id> --evidence-ref <artifact>`.
+- Implementers must run `neuve kanban gate <ticket> --target done` before claiming a slice is ready to close. The gate report is the authoritative checklist for missing ticket process requirements, but it does not replace independent review.
+- Implementers must record validation proof with `neuve kanban evidence <ticket> <summary> --result passed --satisfies <expected-evidence-label> --proof-ref <artifact-or-review-ref> --artifact-ref <ref> --command-ref <command> --commit-ref <short-ref> --commit-title <title>` after committed work exists. Every ticket evidence handoff tied to committed code must include paired commit short refs and titles.
+- Treat `--command-ref` as provenance only. Evidence satisfies a lane gate only when it records the result, the exact expected-evidence label, and a bounded proof ref that demonstrates the result.
+- Reviewers must read the same ticket context and add review disposition or blockers back to the ticket.
+- Reviewers must run Neuve review routing when available and treat any human-routed unit as a HITL gate before review approval. Human-routed units include `human_required`, `human_suggested`, manual-required, suggested-review, focused-human-review, strict-human-review, and manual-mapping labels.
+- Kanban state is process state only. It never replaces source-of-truth inspection, strict review, test evidence, HITL decisions, or owner approval.
+
+At closeout:
+
+- Complete a ticket only after `neuve kanban gate <ticket> --target done` passes and DoD, proof-backed evidence, review disposition, dependency state, HITL state, and any committed-work short refs/titles are recorded.
+- Before completing a ticket or presenting final closeout, the lead must run the full `neuve-review-workflow` for the final intended range, normally the full branch against its merge base or target base. If that final pass reports any human-routed units (`human_required`, `human_suggested`, manual-required, suggested-review, focused-human-review, strict-human-review, or manual-mapping labels), the lead must run the same HITL gate: surface the units to the user, request a bounded decision, and record the decision or explicit waiver before completing the ticket.
+- Block a ticket when a sourced ambiguity, owner decision, dependency, or validation gap prevents safe progress.
+- Leave parent/workstream tickets active when child task tickets remain incomplete; record a comment explaining the current state instead of forcing completion.
+
 ## Lead Role
 
 **Coordinator, NOT implementer or reviewer.**
@@ -54,17 +82,20 @@ Do not treat a plan as complete until the correctness target, verification path,
 ### Implementing Engineers (senior-engineer)
 
 - Receive seed prompts with: skills to load, files to modify, acceptance criteria
-- Receive the implementation context bundle: dispatch packet, PRD/scoping artifact, dependency graph state, HITL decisions, DoD checklist, review lanes, artifact conventions, exact diary/evidence/decision-log paths, correctness target, source of truth, verifiability map, type/lint/documentation gates, commit plan, guardrails, evidence plan
+- Receive the implementation context bundle: Kanban ticket id/context, dispatch packet, PRD/scoping artifact, dependency graph state, HITL decisions, DoD checklist, review lanes, artifact conventions, exact diary/evidence/decision-log paths, correctness target, source of truth, verifiability map, type/lint/documentation gates, commit plan, guardrails, evidence plan
 - Write diary entries documenting changes, decisions, issues
 - Write decision-log entries when they proceed through uncertainty instead of blocking
+- Record ticket progress, evidence handoffs, and blockers through `neuve kanban comment`, `neuve kanban evidence`, and `neuve kanban block` as appropriate
 - Stay running through the review loop for potential patches
 - Use `bun`/`bunx` — never `npm`/`npx`
 
 **Mandatory verification before reporting done:**
+- Re-read `neuve kanban show <ticket>` and `neuve kanban context <ticket>` and confirm the implemented slice still matches the ticket scope.
 - Run `bunx tsc --noEmit -p <app>/tsconfig.json` for EVERY app with changed files — not repo-wide, per-app
 - Run the scoped lint/static-analysis commands for every changed app/package
 - Preserve type-system correctness: no `any`, broad `unknown`, unchecked casts, non-null assertions, or lint disables unless the scoping artifact permits them or the diary records the invariant that makes them safe
 - Add TSDoc-style comments for public, exported, major, lifecycle-sensitive, security-sensitive, adapter, classifier, or non-obvious functions. Follow the DevTools frontend style: document behavior, invariants, return semantics, side effects, and footguns rather than restating the signature.
+- Treat deterministic tests as the primary behavior proof. They must cover the happy path plus known, reasonable unhappy paths within the scoped work. Visual Proof is only a screenshot/trace of an existing or already-scoped user-facing route; do not create proof-only QA harnesses, hidden routes, synthetic UI surfaces, or special APIs solely to manufacture proof. If no existing/scoped route applies, record Visual Proof as not applicable and provide deterministic test proof plus a validated/fingerprinted test-output artifact.
 - Keep changes stageable into the scoped granular commit plan. Do not mix mechanical formatting, behavior, tests, and docs when they can be separate coherent commits.
 - Use domain/product concepts for implementation names. Workstream IDs or titles must not appear in fixture paths, fixture payload domain values, test names/functions, implementation comments/doc comments, generated artifact names or comments, human-facing implementation docs, or suggested commit messages. Keep IDs only where orchestration/bookkeeping artifact conventions require them, such as PRD, handover, evidence, diary, review, and task paths.
 - When replacing/unifying a flow, grep ALL callers of the old flow and update or remove them
@@ -78,11 +109,12 @@ Do not treat a plan as complete until the correctness target, verification path,
 ### Reviewers (separate senior-engineer, antagonistic)
 
 - Operate with an **antagonistic lens** — assume the code is wrong until proven right
-- Receive the review context bundle: project review system prompt, dispatch packet, PRD/scoping artifact, implementer diary, evidence artifacts, decision log, DoD checklist, review lane definition, relevant domain skills, and explicit antagonistic directive
+- Receive the review context bundle: Kanban ticket id/context, project review system prompt, dispatch packet, PRD/scoping artifact, implementer diary, evidence artifacts, decision log, DoD checklist, review lane definition, relevant domain skills, and explicit antagonistic directive
 - **Question every line of code** — trace full execution paths, not just the diff
 - **Check what WASN'T changed** — sibling code, parallel agent types, shared interfaces
 - **Verify every diary claim** — grep, trace types, confirm backward compatibility
 - Use sub-agents for vertical exploration (type checking, pattern conformance, runtime analysis, sibling code search)
+- Run Neuve review routing when available and stop for a HITL gate when any review unit is human-suggested, human-required, manual-required, suggested-review, focused-human-review, strict-human-review, or manual-mapping routed. Record the surfaced units and developer decision or explicit waiver in the review artifact.
 - Write review to `reviews/task-X.Y-review.md`
 - Verdict: APPROVE or REQUEST_CHANGES — ANY critical or major finding forces REQUEST_CHANGES
 - Every finding MUST include `file:line`, the exact problem, and WHY it matters
@@ -96,20 +128,22 @@ Do not treat a plan as complete until the correctness target, verification path,
 
 ## Mandatory Task Execution Protocol
 
-**12 steps. Do NOT skip any.**
+**14 steps. Do NOT skip any.**
 
 1. **Scope correctness** using `/workstream-scoping` when the task is non-trivial and no complete scoping bundle already exists.
 2. **Create or update a scoping bundle** with PRD/scoping artifact, dependency graph, HITL decision register, dispatch packet, artifact conventions, DoD checklist, review lanes, correctness target, source-of-truth clarity, verifiability map, verification methods, type/lint/documentation gates, verifiable decomposition, granular commit plan, guardrails, evidence plan, and review posture.
-3. **Spawn implementing teammate** with seed prompt + dispatch packet + PRD/scoping artifact + dependency/HITL status + exact artifact paths.
-4. **Teammate implements** and reports back with diary, evidence artifacts, and decision log.
-5. **Spawn reviewer** (separate instance) with the project `review-system-prompt.md`, dispatch packet, PRD/scoping artifact, DoD checklist, review lanes, diary, evidence artifacts, and decision log — BEFORE dismissing implementer. Always include the antagonistic directive: _"Be extra critical. Question every line. Assume the code is wrong until proven right. If you find ANY critical or major issue, verdict MUST be REQUEST_CHANGES."_
-6. **Reviewer writes review** to `reviews/task-X.Y-review.md`, validating both implementation and correctness evidence.
-7. **If REQUEST_CHANGES** — lead relays findings to the STILL-RUNNING implementer for patches. Relay the EXACT findings, not a summary. Iterate until APPROVE.
-8. **If APPROVE** — implementer writes final diary/handover entry.
-9. **Lead does quick sanity check** (`bunx tsc --noEmit`, verify files exist, confirm dispatch scope, dependency/HITL state, DoD, decision log, and evidence artifacts exist).
-10. **Update workstream artifact tracker** when the repo has one.
-11. **Dismiss implementer and reviewer** only after review loop is complete.
-12. **Lead presents summary to user** for final validation.
+3. **Select or create the Kanban ticket** for the task slice when the repo has Neuve Kanban. Read `neuve kanban show <ticket>` and `neuve kanban context <ticket>` and include the ticket context in all dispatch prompts.
+4. **Spawn implementing teammate** with seed prompt + Kanban ticket context + dispatch packet + PRD/scoping artifact + dependency/HITL status + exact artifact paths.
+5. **Teammate implements** and reports back with diary, evidence artifacts, decision log, `neuve kanban gate <ticket> --target done` output, commit short refs/titles, and Kanban comment/evidence handoffs.
+6. **Spawn reviewer** (separate instance) with Kanban ticket context, the project `review-system-prompt.md`, dispatch packet, PRD/scoping artifact, DoD checklist, review lanes, diary, evidence artifacts, and decision log — BEFORE dismissing implementer. Always include the antagonistic directive: _"Be extra critical. Question every line. Assume the code is wrong until proven right. If you find ANY critical or major issue, verdict MUST be REQUEST_CHANGES."_
+7. **Reviewer writes review** to `reviews/task-X.Y-review.md`, validating both implementation and correctness evidence. If Neuve routes any unit to human-required, human-suggested, manual-required, suggested-review, focused-human-review, strict-human-review, or manual-mapping review, the reviewer must run a HITL gate and record the decision or explicit waiver before `APPROVE`.
+8. **If REQUEST_CHANGES** — lead relays findings to the STILL-RUNNING implementer for patches. Relay the EXACT findings, not a summary. Iterate until APPROVE.
+9. **If APPROVE** — implementer writes final diary/handover entry and records the final Kanban evidence/comment handoff with proof refs, satisfied expected-evidence labels, `--result passed`, and commit short refs/titles for committed work.
+10. **Lead does quick sanity check** (`bunx tsc --noEmit`, verify files exist, confirm dispatch scope, dependency/HITL state, DoD, decision log, evidence artifacts, and Kanban ticket state exist).
+11. **Lead runs final Neuve review workflow** for the full final range. If any human-routed review units are present, the lead must run a HITL gate with the user and record the decision or explicit waiver before closeout.
+12. **Update workstream artifact tracker** when the repo has one, then run `neuve kanban gate <ticket> --target done` and update Kanban ticket state to done or blocked according to the gate report and recorded evidence.
+13. **Dismiss implementer and reviewer** only after review loop is complete.
+14. **Lead presents summary to user** for final validation.
 
 **CRITICAL**: Never dismiss the implementer before review completes. Never fix code yourself — relay to implementer. Never skip the review instance. Never perform the review yourself. Never soften reviewer findings when relaying to the implementer.
 
@@ -135,6 +169,7 @@ Do not treat a plan as complete until the correctness target, verification path,
 7. **Execution order**: Are operations truly sequential where they need to be? Could fiber scheduling reorder them?
 8. **Decision logs**: If agents made autonomous choices under uncertainty, are those choices recorded and reversible where possible?
 9. **Evidence artifacts**: Are tests, screenshots, traces, fixtures, or generated reports present and inspectable?
+9a. **Visual Proof discipline**: Does behavior correctness rely on deterministic happy/unhappy path tests, and is Visual Proof limited to screenshots/traces of existing or scoped routes rather than proof-only harnesses/routes/APIs?
 10. **Commit boundaries**: Are mechanical changes, behavior changes, tests, docs, and generated artifacts separated when possible?
 
 ### Mandatory Verification (Learned from Wave A)
@@ -211,15 +246,17 @@ See [resources/seed-prompt-template.md](resources/seed-prompt-template.md) for t
 Quick checklist for every seed prompt:
 
 - [ ] Skills to load (e.g., `/effect-services`, `/ai-sdk`, `/interface-craft`)
+- [ ] Kanban ticket id, lane, `neuve kanban show` summary, and `neuve kanban context` summary included
 - [ ] Dispatch packet included
 - [ ] PRD/scoping artifact included (correctness target, source of truth, verifiability, guardrails)
-- [ ] Dependency graph and HITL decision state included
+- [ ] Dependency graph and HITL decision state included, including the rule that human-suggested Neuve units require a HITL gate
 - [ ] DoD checklist, artifact conventions, and review lanes included
 - [ ] Specific files to modify (with line references where helpful)
 - [ ] Acceptance criteria (always include `bunx tsc --noEmit`)
 - [ ] Type/lint/documentation gates included
 - [ ] Commit plan and staging boundaries included
 - [ ] Evidence plan and decision-log rules included
+- [ ] Kanban gate/comment/evidence/block commands required for handoff and closeout, with proof refs, results, satisfied expected-evidence labels, and commit short refs/titles required on committed evidence
 - [ ] Diary/handover location
 - [ ] Exact evidence and decision-log paths
 - [ ] What NOT to do (avoid parallel work conflicts)
@@ -259,6 +296,7 @@ Use the project review system prompt identified by the dispatch packet. For the 
 ## Key Rules (Learned from Experience)
 
 - **Correctness comes before execution** — define what correct means and how it will be verified before dispatching implementers.
+- **Kanban drives execution** — when a repo-local Neuve Kanban board exists, every task slice must have a source-linked ticket before dispatch, every handoff must update the ticket, and closeout must pass `neuve kanban gate <ticket> --target done`.
 - **Implementation consumes scoping outputs** — independent agents should receive the PRD, dispatch packet, dependency graph, HITL register, DoD checklist, artifact conventions, review lanes, and exact output paths. They should not need the scoping skill to reconstruct context.
 - **Types and lint are correctness tools** — type holes, lint disables, unchecked casts, and schema gaps need explicit invariants or they block review.
 - **Major functions need collaboration-grade docs** — use TSDoc-style comments for public, exported, lifecycle-sensitive, security-sensitive, adapter, classifier, or non-obvious functions.

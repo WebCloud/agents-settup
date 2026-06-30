@@ -1,3 +1,9 @@
+---
+name: interface-design-guardrails
+description: Use when designing, redesigning, or reviewing polished product interfaces, especially marketing pages, premium UI components, Neuve visual work, craft-quality audits, anti-slop checks, quality-facet scoring, and interface design guardrails.
+argument-hint: "[design task, screenshot, file path, or review target]"
+---
+
 # Interface Design Guardrails
 
 A skill for building interfaces with uncommon care. Based on Josh Puckett's Interface Craft principles and practical patterns from best-in-class product pages.
@@ -107,7 +113,7 @@ Before shipping, verify NONE of these are present together:
 1. Read `resources/craft-principles.md` for the design philosophy
 2. Read `resources/anti-patterns.md` to know what to avoid (includes Neuve-specific rejections from 10+ iterations)
 3. Read `resources/quality-framework.md` to evaluate your work against facets
-4. Reference `resources/tailwind-plus-patterns.md` as a storyboard for section starting points
+4. Reference `resources/industry-standards.md` for platform defaults and section starting points
 5. Start with shadcn/Tailwind defaults, then innovate beyond
 6. After each iteration, rate against the quality facets — are they trending up?
 7. For every design decision, be able to explain WHY
